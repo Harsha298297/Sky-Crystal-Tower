@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sky Crystal Tower 3D</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body { overflow: hidden; background: #0b1021; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
+    #hud {
+      position: fixed; top: 16px; left: 16px; display: flex; gap: 12px; z-index: 10; flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(15, 23, 42, 0.88); border: 2px solid #38bdf8;
+      padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+    #shop {
+      position: fixed; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10;
+    }
+    button {
+      background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none;
+      padding: 9px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: transform 0.1s;
+    }
+    button:hover { transform: scale(1.04); }
+    button:disabled { background: #475569; cursor: not-allowed; box-shadow: none; transform: none; }
+    .btn-admin { background: linear-gradient(135deg, #059669, #10b981); }
+    .btn-owner { background: linear-gradient(135deg, #d97706, #f59e0b); color: #000; }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); }
+
+    #banner {
+      position: fixed; top: 82px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94); border: 2px solid #facc15; color: #facc15;
+      padding: 10px 24px; border-radius: 999px; font-weight: 800; font-size: 17px;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20; text-align: center;
+    }
+    #controls {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.8); padding: 8px 18px; border-radius: 999px;
+      font-size: 13px; color: #cbd5e1; z-index: 10; white-space: nowrap;
+    }
+
+    /* ADMIN & OWNER PANELS */
+    .panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 340px; max-width: 92vw; background: rgba(15, 23, 42, 0.96);
+      border-radius: 16px; padding: 20px; z-index: 50; display: none;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.75);
+    }
+    #adminPanel { border: 2px solid #10b981; }
+    #ownerPanel { border: 2px solid #f59e0b; }
+    .panel-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+      font-size: 18px; font-weight: 800;
+    }
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .panel input {
+      width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #475569;
+      background: #1e293b; color: #fff; font-size: 13px; margin-bottom: 8px;
+    }
+    .badge-on { background: #16a34a !important; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="stat-box">💎 Crystals: <span id="crystals">0</span></div>
+    <div class="stat-box">👑 Summits: <span id="summits">0</span></div>
+    <div class="stat-box" id="roleBadge" style="display:none; border-color:#f59e0b; color:#facc15;">⭐ STAFF</div>
+  </div>
+
+  <div id="shop">
+    <button id="buySpeed">👟 Wind Boots (+Speed) — 50 💎</button>
+    <button id="buyJump">🪶 Feather Charm (+Jump) — 50 💎</button>
+    <button id="rebuildBtn">🔄 Shuffle Tower</button>
+    <button class="btn-admin" id="openAdminBtn">🛡️ Admin Panel [M]</button>
+    <button class="btn-owner" id="openOwnerBtn">👑 Owner Panel [O]</button>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="adminPanel" class="panel">
+    <div class="panel-header" style="color:#34d399;">
+      <span>🛡️ ADMIN PANEL</span>
+      <button class="btn-danger" onclick="closePanels()">✕</button>
+    </div>
+    <div class="panel-grid">
+      <button id="admFlyBtn" onclick="toggleFly()">🕊️ Fly: OFF</button>
+      <button id="admGodBtn" onclick="toggleGod()">🛡️ God Mode: OFF</button>
+      <button onclick="setAdminSpeed()">⚡ Speed (32)</button>
+      <button onclick="setAdminJump()">🚀 Super Jump (32)</button>
+      <button onclick="giveCrystals(500)">💎 +500 Crystals</button>
+      <button onclick="resetPlayer()">🏠 Respawn</button>
+    </div>
+  </div>
+
+  <!-- OWNER PANEL -->
+  <div id="ownerPanel" class="panel">
+    <div class="panel-header" style="color:#fbbf24;">
+      <span>👑 OWNER PANEL</span>
+      <button class="btn-danger" onclick="closePanels()">✕</button>
+    </div>
+    <div class="panel-grid">
+      <button onclick="tpSummit()">🏆 TP to Summit</button>
+      <button id="ownFreezeBtn" onclick="toggleFreezeLasers()">❄️ Freeze Lasers: OFF</button>
+      <button id="ownGravBtn" onclick="toggleMoonGravity()">🌙 Moon Gravity: OFF</button>
+      <button onclick="giveCrystals(10000)">💰 +10,000 Crystals</button>
+      <button id="ownFlyBtn" onclick="toggleFly()">🕊️ Fly: OFF</button>
+      <button id="ownGodBtn" onclick="toggleGod()">🛡️ God Mode: OFF</button>
+    </div>
+    <input type="text" id="announceInput" placeholder="Type global announcement..." />
+    <button class="btn-owner" style="width:100%; margin-bottom:8px;" onclick="sendAnnouncement()">📢 Broadcast Message</button>
+    <button class="btn-danger" style="width:100%;" onclick="resetAllStats()">🗑️ Reset All Stats</button>
+  </div>
+
+  <div id="banner">SUMMIT REACHED! +100 CRYSTALS!</div>
+  <div id="controls">Move: <b>WASD / Arrows</b> | Jump / Fly Up: <b>Space</b> | Fly Down: <b>Shift</b> | Camera: <b>Q / E</b></div>
+
+  <script src="https://cloudflare.com"></script>
+  <script>
+    // 1. SCENE, CAMERA & RENDERER
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+    scene.fog = new THREE.Fog(0x0f172a, 45, 160);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 300);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.9);
+    scene.add(hemiLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(30, 80, 40);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // 2. GAME & STAFF STATE
+    const ADMIN_PASS = "65976487326482754764580725827582743587453084753875387538745837457845853847583753875475387583753745837543875038753874508245748583758375282657635735735437593789Azdmin";
+    const OWNER_PASS = "4657587234892387498468734628764278540874587235408745028740251875090wner";
+
+    let adminUnlocked = false;
+    let ownerUnlocked = false;
+
+    let crystals = 0;
+    let summits = 0;
+    let moveSpeed = 14;
+    let jumpForce = 18;
+    let gravity = 42;
+    let camYaw = 0;
+
+    let flyMode = false;
+    let godMode = false;
+    let freezeLasers = false;
+    let moonGravity = false;
+    let summitPos = new THREE.Vector3(0, 50, -150);
+
+    const crystalsEl = document.getElementById("crystals");
+    const summitsEl = document.getElementById("summits");
+    const bannerEl = document.getElementById("banner");
+    const buySpeedBtn = document.getElementById("buySpeed");
+    const buyJumpBtn = document.getElementById("buyJump");
+    const roleBadge = document.getElementById("roleBadge");
+
+    function updateUI() {
+      crystalsEl.textContent = crystals;
+      summitsEl.textContent = summits;
+      buySpeedBtn.disabled = crystals < 50;
+      buyJumpBtn.disabled = crystals < 50;
+    }
+
+    function showBanner(msg) {
+      bannerEl.textContent = msg;
+      bannerEl.style.opacity = "1";
+      clearTimeout(window.bannerTimer);
+      window.bannerTimer = setTimeout(() => { bannerEl.style.opacity = "0"; }, 2600);
+    }
+
+    // PANEL CONTROLS
+    function closePanels() {
+      document.getElementById("adminPanel").style.display = "none";
+      document.getElementById("ownerPanel").style.display = "none";
+    }
+
+    function openAdmin() {
+      if (!adminUnlocked && !ownerUnlocked) {
+        const entry = prompt("Enter Admin Password:");
+        if (entry === ADMIN_PASS || entry === OWNER_PASS) {
+          adminUnlocked = true;
+          if (entry === OWNER_PASS) ownerUnlocked = true;
+          roleBadge.style.display = "block";
+          roleBadge.textContent = ownerUnlocked ? "👑 OWNER" : "🛡️ ADMIN";
+        } else if (entry !== null) {
+          showBanner("❌ WRONG ADMIN PASSWORD");
+          return;
+        } else {
+          return;
+        }
+      }
+      closePanels();
+      document.getElementById("adminPanel").style.display = "block";
+    }
+
+    function openOwner() {
+      if (!ownerUnlocked) {
+        const entry = prompt("Enter Owner Password:");
+        if (entry === OWNER_PASS) {
+          ownerUnlocked = true;
+          adminUnlocked = true;
+          roleBadge.style.display = "block";
+          roleBadge.textContent = "👑 OWNER";
+        } else if (entry !== null) {
+          showBanner("❌ WRONG OWNER PASSWORD");
+          return;
+        } else {
+          return;
+        }
+      }
+      closePanels();
+      document.getElementById("ownerPanel").style.display = "block";
+    }
+
+    document.getElementById("openAdminBtn").onclick = openAdmin;
+    document.getElementById("openOwnerBtn").onclick = openOwner;
+
+    // ADMIN & OWNER POWERS
+    function toggleFly() {
+      flyMode = !flyMode;
+      playerVel.y = 0;
+      const label = "🕊️ Fly: " + (flyMode ? "ON" : "OFF");
+      document.getElementById("admFlyBtn").textContent = label;
+      document.getElementById("ownFlyBtn").textContent = label;
+      document.getElementById("admFlyBtn").classList.toggle("badge-on", flyMode);
